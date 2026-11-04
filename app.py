@@ -7,11 +7,56 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda, RunnableBranch
 
-st.set_page_config(page_title="Zyro Dynamics HR Help Desk", page_icon="💼", layout="centered")
-st.title("💼 Zyro Dynamics - HR Help Desk Chatbot")
-st.caption("Ask any question across our official HR policy documents. Every answer includes source citations.")
+# Page configuration
+st.set_page_config(
+    page_title="Zyro Dynamics - HR Help Desk",
+    page_icon="💼",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# Load API keys from Streamlit Secrets
+# Custom CSS styling for a polished, modern look
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.2rem;
+        color: #1E3A8A;
+        font-weight: 700;
+        margin-bottom: 0px;
+    }
+    .sub-header {
+        font-size: 1.1rem;
+        color: #4B5563;
+        margin-bottom: 25px;
+    }
+    .stButton>button {
+        background-color: #2563EB;
+        color: white;
+        font-weight: 600;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        border: none;
+    }
+    .stButton>button:hover {
+        background-color: #1D4ED8;
+        color: white;
+    }
+    .answer-box {
+        background-color: #F8FAFC;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #2563EB;
+        margin-top: 15px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# App Header
+st.markdown('<p class="main-header">💼 Zyro Dynamics HR Help Desk</p>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Your intelligent assistant for company policies, benefits, and workplace guidelines.</p>', unsafe_allow_html=True)
+st.markdown("---")
+
+# Load API keys from Streamlit Secrets safely
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = st.secrets.get("LANGCHAIN_API_KEY", "dummy")
@@ -22,7 +67,7 @@ def load_bot():
     embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
     vectorstore = FAISS.load_local("faiss_hr_index", embeddings, allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 15, "lambda_mult": 0.7})
-    llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.0)
+    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.0)
 
     def format_docs(docs):
         return "\n\n".join([f"}, Page {d.metadata['page_number']}]\n{d.page_content}" for d in docs])
@@ -49,11 +94,21 @@ If the question is not about Zyro Dynamics HR policies, reply ONLY with:
     
     return RunnableLambda(lambda q: {"question": q}) | RunnableLambda(check_scope) | RunnableBranch((lambda x: x["in_scope"], in_scope_chain), refusal_chain)
 
-bot_chain = load_bot()
+# Initialize bot pipeline
+with st.spinner("Loading HR Knowledge Base..."):
+    bot_chain = load_bot()
 
-query = st.text_input("Enter your HR Policy Question:")
-if st.button("Ask Bot") and query:
-    with st.spinner("Searching policies..."):
+# User Input Section
+query = st.text_input("💡 Ask a question about HR policies:", placeholder="e.g., What is the maternity leave policy?")
+
+col1, col2 = st.columns([1, 4])
+with col1:
+    submit_btn = st.button("Ask Bot")
+
+if submit_btn and query:
+    with st.spinner("Analyzing HR documents..."):
         response = bot_chain.invoke(query)
-        st.write("### Answer")
-        st.write(response)
+        st.markdown("### 📋 Answer")
+        st.markdown(f'<div class="answer-box">{response}</div>', unsafe_allow_html=True)
+elif submit_btn and not query:
+    st.warning("Please type a question before clicking Ask Bot.")

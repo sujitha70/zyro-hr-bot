@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS styling for a polished, modern look
+# Custom CSS styling
 st.markdown("""
     <style>
     .main-header {
@@ -67,7 +67,7 @@ def load_bot():
     embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
     vectorstore = FAISS.load_local("faiss_hr_index", embeddings, allow_dangerous_deserialization=True)
     retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 15, "lambda_mult": 0.7})
-    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.0)
+    llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.0)
 
     def format_docs(docs):
         return "\n\n".join([f"}, Page {d.metadata['page_number']}]\n{d.page_content}" for d in docs])

@@ -42,7 +42,6 @@ def load_bot():
     retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 15, "lambda_mult": 0.7})
     llm = ChatGroq(model="openai/gpt-oss-20b", temperature=0.0)
 
-    # Clean, error-free document formatting without f-string bracket conflicts
     def format_docs(docs):
         formatted = []
         for d in docs:
@@ -79,10 +78,13 @@ with st.spinner("Loading HR Knowledge Base..."):
 
 query = st.text_input("💡 Ask a question about HR policies:", placeholder="e.g., What is the leave policy?")
 
-if st.button("Ask Bot") and query:
-    with st.spinner("Analyzing HR documents..."):
-        response = bot_chain.invoke(query)
-        st.markdown("### 📋 Answer")
-        st.markdown(f'<div class="answer-box">{response}</div>', unsafe_allow_html=True)
-elif st.button("Ask Bot") and not query:
-    st.warning("Please type a question first.")
+submit_btn = st.button("Ask Bot")
+
+if submit_btn:
+    if query:
+        with st.spinner("Analyzing HR documents..."):
+            response = bot_chain.invoke(query)
+            st.markdown("### 📋 Answer")
+            st.markdown(f'<div class="answer-box">{response}</div>', unsafe_allow_html=True)
+    else:
+        st.warning("Please type a question first.")
